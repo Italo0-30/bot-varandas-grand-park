@@ -9,6 +9,31 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+// Verificação do webhook do WhatsApp (Meta)
+const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+
+app.get("/webhook", (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (
+    VERIFY_TOKEN &&
+    mode === "subscribe" &&
+    token === VERIFY_TOKEN
+  ) {
+    console.log("Webhook verificado com sucesso!");
+    return res.status(200).send(challenge);
+  }
+
+  return res.sendStatus(403);
+});
+
+// Recebimento de eventos do WhatsApp
+app.post("/webhook", (req, res) => {
+  console.log("Evento recebido da Meta");
+  return res.sendStatus(200);
+});
 // Armazenamento temporário das conversas
 const conversas = new Map();
 
