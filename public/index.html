@@ -1,0 +1,375 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>Atendimento - Varandas Grand Park</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #d1d7db;
+    }
+
+    .chat {
+      max-width: 700px;
+      height: 100dvh;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      background: #efeae2;
+      box-shadow: 0 0 15px #0002;
+    }
+
+    header {
+      background: #075e54;
+      color: white;
+      padding: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      background: #128c7e;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 23px;
+    }
+
+    .subtitulo {
+      font-size: 12px;
+      font-weight: normal;
+      margin-top: 4px;
+      opacity: 0.9;
+    }
+
+    #mensagens {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .mensagem {
+      padding: 12px 15px;
+      margin: 10px 0;
+      border-radius: 12px;
+      max-width: 85%;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 1.5;
+      font-size: 14px;
+      box-shadow: 0 1px 2px #0001;
+    }
+
+    .bot {
+      background: white;
+      margin-right: auto;
+      border-top-left-radius: 3px;
+    }
+
+    .usuario {
+      background: #d9fdd3;
+      margin-left: auto;
+      border-top-right-radius: 3px;
+    }
+
+    .sistema {
+      background: #fff3cd;
+      color: #665500;
+      margin: 12px auto;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    footer {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      background: #f0f2f5;
+    }
+
+    input {
+      flex: 1;
+      min-width: 0;
+      padding: 13px;
+      border: none;
+      outline: none;
+      border-radius: 9px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #008069;
+      color: white;
+      border: none;
+      border-radius: 9px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #006b58;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #reiniciar {
+      background: #54656f;
+    }
+
+    #reiniciar:hover {
+      background: #3b4a54;
+    }
+
+    @media (max-width: 500px) {
+      header {
+        padding: 14px;
+        font-size: 15px;
+      }
+
+      footer {
+        padding: 8px;
+        gap: 5px;
+      }
+
+      button {
+        padding: 10px;
+        font-size: 12px;
+      }
+
+      #mensagens {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="chat">
+
+    <header>
+      <div class="avatar">🏢</div>
+      <div>
+        Condomínio Varandas Grand Park
+        <div class="subtitulo">
+          Atendimento Virtual - Ambiente de Teste
+        </div>
+      </div>
+    </header>
+
+    <main id="mensagens"></main>
+
+    <footer>
+      <input
+        type="text"
+        id="entrada"
+        placeholder="Digite sua mensagem..."
+        autocomplete="off"
+      >
+
+      <button id="enviar">
+        Enviar
+      </button>
+
+      <button id="reiniciar">
+        Reiniciar
+      </button>
+    </footer>
+
+  </div>
+
+  <script>
+    const id = "teste-" + crypto.randomUUID();
+
+    const mensagens =
+      document.getElementById("mensagens");
+
+    const entrada =
+      document.getElementById("entrada");
+
+    const enviar =
+      document.getElementById("enviar");
+
+    const reiniciar =
+      document.getElementById("reiniciar");
+
+    let ocupado = false;
+    let atendimentoEncerrado = false;
+
+    function adicionarMensagem(texto, tipo) {
+      const elemento = document.createElement("div");
+
+      elemento.className = "mensagem " + tipo;
+      elemento.textContent = texto;
+
+      mensagens.appendChild(elemento);
+
+      mensagens.scrollTop = mensagens.scrollHeight;
+    }
+
+    async function solicitar(mensagem) {
+      const resposta = await fetch("/mensagem", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          id: id,
+          mensagem: mensagem
+        })
+      });
+
+      if (!resposta.ok) {
+        throw new Error("Erro de comunicação com o servidor.");
+      }
+
+      return resposta.json();
+    }
+
+    async function iniciarAtendimento() {
+      ocupado = true;
+      enviar.disabled = true;
+
+      try {
+        const dados = await solicitar("");
+
+        if (dados.resposta) {
+          adicionarMensagem(dados.resposta, "bot");
+        }
+
+        atendimentoEncerrado = false;
+        entrada.disabled = false;
+      } catch (erro) {
+        adicionarMensagem(
+          "Não foi possível conectar ao servidor.",
+          "sistema"
+        );
+      } finally {
+        ocupado = false;
+        enviar.disabled = false;
+      }
+    }
+
+    async function enviarMensagem() {
+      const texto = entrada.value.trim();
+
+      if (!texto || ocupado || atendimentoEncerrado) {
+        return;
+      }
+
+      ocupado = true;
+      enviar.disabled = true;
+      entrada.value = "";
+
+      adicionarMensagem(texto, "usuario");
+
+      try {
+        const dados = await solicitar(texto);
+
+        if (dados.resposta) {
+          adicionarMensagem(dados.resposta, "bot");
+        }
+
+        if (
+          dados.etapa === "humano" ||
+          dados.etapa === "finalizado"
+        ) {
+          atendimentoEncerrado = true;
+          entrada.disabled = true;
+
+          adicionarMensagem(
+            dados.etapa === "humano"
+              ? "Triagem concluída. Aguardando atendimento humano."
+              : "Atendimento automático finalizado.",
+            "sistema"
+          );
+        }
+      } catch (erro) {
+        adicionarMensagem(
+          "Erro ao enviar mensagem. Tente novamente.",
+          "sistema"
+        );
+      } finally {
+        ocupado = false;
+        enviar.disabled = atendimentoEncerrado;
+        if (!atendimentoEncerrado) entrada.focus();
+      }
+    }
+
+    async function reiniciarAtendimento() {
+      if (ocupado) return;
+
+      ocupado = true;
+      enviar.disabled = true;
+      reiniciar.disabled = true;
+
+      try {
+        const resposta = await fetch("/reiniciar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ id })
+        });
+
+        if (!resposta.ok) {
+          throw new Error("Erro ao reiniciar.");
+        }
+
+        mensagens.replaceChildren();
+        atendimentoEncerrado = false;
+        entrada.disabled = false;
+        entrada.value = "";
+      } catch (erro) {
+        adicionarMensagem(
+          "Não foi possível reiniciar o atendimento.",
+          "sistema"
+        );
+        return;
+      } finally {
+        ocupado = false;
+        reiniciar.disabled = false;
+        enviar.disabled = atendimentoEncerrado;
+      }
+
+      await iniciarAtendimento();
+    }
+
+    enviar.addEventListener("click", enviarMensagem);
+
+    entrada.addEventListener("keydown", evento => {
+      if (evento.key === "Enter") {
+        enviarMensagem();
+      }
+    });
+
+    reiniciar.addEventListener(
+      "click",
+      reiniciarAtendimento
+    );
+
+    iniciarAtendimento();
+  </script>
+
+</body>
+</html>
